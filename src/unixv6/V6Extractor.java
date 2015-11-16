@@ -1,5 +1,6 @@
 package unixv6;
 
+import java.io.FileOutputStream;
 import java.util.List;
 
 public class V6Extractor {
@@ -15,7 +16,8 @@ public class V6Extractor {
 		//v6e.extract("/test/hoge.txt");
 		//v6e.extract("/test/hello");
 		//v6e.extract("/test/hello2.c");
-		v6e.extract("/test/hello2");
+		//v6e.extract("/test/a.out");
+		v6e.extract("/test/result");
 	}
 	
 	public void process() {
@@ -72,21 +74,42 @@ public class V6Extractor {
 				System.exit(1);;
 			}			
 			target = inodes.get(num);
+			System.out.println("num = " + num);
 			if (target.isDirectory) {
 				parent = target;
 			}
 		}
 		
-		System.out.println("isDirectory = " + target.isDirectory);
-		System.out.println("isLarge = " + target.isLarge);
-		System.out.println("size = " + target.size);
+		if (target != null) {
+			System.out.println("isDirectory = " + target.isDirectory);
+			System.out.println("isLarge = " + target.isLarge);
+			System.out.println("size = " + target.size);
+			target.show();
+		} else {
+			System.out.println("inode not found");
+		}
+		
+		//target.extract(bd);
 		
 		byte[] data = target.extract(bd);
 		
+		try {
+			FileOutputStream fout = new FileOutputStream(paths[paths.length-1]);
+			fout.write(data, 0, data.length);
+			fout.flush();
+			fout.close();
+			System.out.println("Write data to > " + paths[paths.length-1]);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}				
+		
+		/*
 		for (int i = 0; i < data.length; ++i) {
 			if (i % 16 == 0) System.out.println();
 			System.out.printf("%02x ", data[i]);
 		}
+		*/
+		
 		
 		
 

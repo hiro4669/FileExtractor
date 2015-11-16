@@ -126,17 +126,74 @@ public class Inode {
 		for (int i = 0; i < 2; ++i) {
 			System.out.printf("%04x ", (short)i_mtime[i]);
 		}		
+		System.out.println();
 	}
 	
 	public byte[] extract(BlockDevice bd) {
 		if (isLarge) {
-			
+			return extractInDirect(bd);
 		} else {
 			return extractDirect(bd);
 		}
 				
+		//return null;
+	}
+	
+	private byte[] extractInDirect(BlockDevice bd) {
+		byte[] buf = new byte[size];
+		int p = 0;
+		int remainsize = size;
+		for (int i = 0; i < i_addr.length; ++i) {
+			int base1 = i_addr[i] * BlockDevice.BLOCK_SIZE;
+			bd.setIndex(base1);
+			for (int j = 0; j < BlockDevice.BLOCK_SIZE / 2; ++j) {
+				int offset = bd.readInt();
+				System.out.printf("0x%x ", (short)offset);
+				offset *= BlockDevice.BLOCK_SIZE;
+				if (remainsize < BlockDevice.BLOCK_SIZE) {
+					byte[] tmp = bd.getBytes(offset,  offset+remainsize);
+					System.arraycopy(tmp, 0, buf, p, tmp.length);
+					p += tmp.length;
+					remainsize = 0;
+					break;
+				} else {
+					byte[] tmp = bd.getBytes(offset,  offset+BlockDevice.BLOCK_SIZE);
+					System.arraycopy(tmp, 0, buf, p, tmp.length);
+					p += tmp.length;
+					remainsize -= BlockDevice.BLOCK_SIZE;
+				}
+			}
+			if (remainsize == 0) break;
+		}
+		
+		System.out.println();
+		return buf;
+	}
+	/*
+	private byte[] extractInDirect(BlockDevice bd) {
+		byte[] buf = new byte[size];
+		int p = 0;
+		int remainsize = size;
+		for (int i = 0; i < i_addr.length; ++i) {
+			int base1 = i_addr[i] * BlockDevice.BLOCK_SIZE;
+			bd.setIndex(base1);
+			for (int j = 0; j < BlockDevice.BLOCK_SIZE / 2; ++j) {
+				int offset = bd.readInt();
+				System.out.printf("0x%x ", (short)offset);
+				if (remainsize < BlockDevice.BLOCK_SIZE) {
+					remainsize = 0;
+					break;
+				} else {
+					remainsize -= BlockDevice.BLOCK_SIZE;
+				}
+			}
+			if (remainsize == 0) break;
+		}
+		
+		System.out.println();
 		return null;
 	}
+	*/
 	
 	private byte[] extractDirect(BlockDevice bd) {
 		byte[] buf = new byte[size];
