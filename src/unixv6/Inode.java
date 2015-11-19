@@ -131,7 +131,11 @@ public class Inode {
 	
 	public byte[] extract(BlockDevice bd) {
 		if (isLarge) {
-			return extractInDirect(bd);
+			//byte[] data = extractInDirect(bd);
+			// dummy
+			byte[] data2 = extractIndirect(bd);
+			//return data;
+			return data2;
 		} else {
 			return extractDirect(bd);
 		}
@@ -139,6 +143,73 @@ public class Inode {
 		//return null;
 	}
 	
+	
+	private List<Integer> createBlockTable(BlockDevice bd, int index, int level) {
+		List<Integer> table = new ArrayList<Integer>();
+		bd.setIndex(index * BlockDevice.BLOCK_SIZE);
+		for (int i = 0; i < 256; ++i) {
+			table.add(bd.readInt());			
+		}		
+		if (level > 1) {
+			for (int i = 0; i < 256; ++i) {
+				int addr = table.remove(0);
+				table.addAll(createBlockTable(bd, (short)addr, level-1));
+			}
+		}
+		return table;
+	}
+	
+	private byte[] extractIndirect(BlockDevice bd) {
+		System.out.println("--- extraIndirect2 ---");
+		int remainsize = size;
+		int p = 0;
+		byte[] buf = new byte[size];
+
+		System.out.println("remaining = " + size );
+		
+		for (int i = 0; i < i_addr.length; ++i) {
+		//for (int i = 0; i < 1; ++i) {			
+			System.out.printf("%04x\n", (short)i_addr[i]);
+			List<Integer> table = createBlockTable(bd, (short)i_addr[i], 1);
+			int count = 0;
+			while(!table.isEmpty()) {
+				int addr = table.remove(0) & 0xffff;
+				if (count++ % 16 == 0) System.out.println();
+				System.out.printf("%04x ", (short)addr);				
+			}
+			
+			// test from here
+			System.out.println();
+			List<Integer> table2 = createBlockTable(bd, (short)i_addr[i], 1);
+			int count2 = 0;
+			while(!table2.isEmpty()) {
+				int offset = table2.remove(0) & 0xffff;
+				System.out.printf("%04x\n", (short)offset);
+				offset *= BlockDevice.BLOCK_SIZE;
+				if (remainsize < BlockDevice.BLOCK_SIZE) {
+					byte[] tmp = bd.getBytes(offset,  offset+remainsize);
+					System.arraycopy(tmp, 0, buf, p, tmp.length);
+					p += tmp.length;
+					System.out.println("last");
+					remainsize = 0;
+					break;
+				} else {
+					byte[] tmp = bd.getBytes(offset,  offset+BlockDevice.BLOCK_SIZE);
+					System.arraycopy(tmp, 0, buf, p, tmp.length);
+					p += tmp.length;
+					remainsize -= BlockDevice.BLOCK_SIZE;
+				}
+			}
+			if (remainsize == 0) break;
+			
+			
+		}
+		System.out.println();
+		
+		
+		return buf;
+	}
+	/*
 	private byte[] extractInDirect(BlockDevice bd) {
 		byte[] buf = new byte[size];
 		int p = 0;
@@ -166,32 +237,9 @@ public class Inode {
 			if (remainsize == 0) break;
 		}
 		
-		System.out.println();
-		return buf;
-	}
-	/*
-	private byte[] extractInDirect(BlockDevice bd) {
-		byte[] buf = new byte[size];
-		int p = 0;
-		int remainsize = size;
-		for (int i = 0; i < i_addr.length; ++i) {
-			int base1 = i_addr[i] * BlockDevice.BLOCK_SIZE;
-			bd.setIndex(base1);
-			for (int j = 0; j < BlockDevice.BLOCK_SIZE / 2; ++j) {
-				int offset = bd.readInt();
-				System.out.printf("0x%x ", (short)offset);
-				if (remainsize < BlockDevice.BLOCK_SIZE) {
-					remainsize = 0;
-					break;
-				} else {
-					remainsize -= BlockDevice.BLOCK_SIZE;
-				}
-			}
-			if (remainsize == 0) break;
-		}
 		
 		System.out.println();
-		return null;
+		return buf;
 	}
 	*/
 	
