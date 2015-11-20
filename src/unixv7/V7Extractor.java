@@ -13,7 +13,9 @@ public class V7Extractor {
 		String disk = "";
 		switch(args.length) {
 		case 0: {
-			targetName = "/test/a.out";
+			//targetName = "/test/a.out";
+			//targetName = "/test/result"; // blow 5012 byte
+			targetName = "/test/result2";  
 			disk = "rp06.disk";
 			break;
 		}
@@ -70,6 +72,7 @@ public class V7Extractor {
 		System.out.println("try to find " + path);
 		Inode parent = inodes.get(2); // root node
 		Inode target = null;
+		int inode_num = 0;
 		String[] paths = path.substring(1, path.length()).split("/");
 		for (String str : paths) {
 			int num = parent.getTargetInode(str);
@@ -80,11 +83,21 @@ public class V7Extractor {
 			target = inodes.get(num);
 			if (target.isDirectory) {
 				parent = target;
+			} else {
+				//System.out.println("num = " + num);
+				inode_num = num;
 			}
 		}		
-		System.out.println("size = " + target.di_size);
+		// offset of the target i_node
+		//System.out.printf("inode offset = 0x%x\n", (inode_num - 1) * 0x40 + 0x400);
+		//System.out.println("size = " + target.di_size);
+		//target.show();
 		
+		//target.extract(bd);
+		
+		//To extract
 		byte[] data = target.extract(bd);
+		System.out.println("data length = " + data.length);
 		
 		try {
 			FileOutputStream fout = new FileOutputStream(paths[paths.length-1]);
@@ -94,6 +107,7 @@ public class V7Extractor {
 			System.out.println("Write data to > " + paths[paths.length-1]);
 		} catch (Exception e) {
 			e.printStackTrace();
-		}				
+		}
+		
 	}
 }

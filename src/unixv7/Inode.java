@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 
-
 public class Inode {
 	
 	public static final int INODE_SIZE = 64;
@@ -112,15 +111,67 @@ public class Inode {
 		System.out.println();
 	}
 	
+	
+	private List<Integer> createBlockTable(BlockDevice bd, int index, int level) {
+		List<Integer> table = new ArrayList<Integer>();
+		if (level == 0) {
+			table.add(index);
+			return table;
+		}
+		bd.setIndex(index * BlockDevice.BLOCK_SIZE);
+		for (int i = 0; i < 128; ++i) {
+			table.add(bd.readInt());			
+		}		
+		if (level > 1) {
+			for (int i = 0; i < 128; ++i) {
+				int addr = table.remove(0);
+				table.addAll(createBlockTable(bd, (short)addr, level-1));
+			}
+		}
+		return table;
+	}
+	
+	
+	
 	public byte[] extract(BlockDevice bd) {
-		return extractDirect(bd);
+		byte[] buf = new byte[di_size];
+		int p = 0;
+		int remainsize = di_size;
+		
+		for (int i = 0; i < di_addr.length-1; i += 3) {
+			int offset = (di_addr[i] & 0xff | (di_addr[i+1] & 0xff) << 8 | (di_addr[i+2] & 0xff) << 16);
+			//System.out.printf("%d = %x\n", i/3, offset);
+			int level = (i / 3 < 10) ? 0 : ((i / 3) % 10 + 1);
+			//System.out.printf("i = %d, level = %d\n", i, level);
+			List<Integer> table = createBlockTable(bd, offset, level);
+			while (!table.isEmpty()) {
+				int offset2 = table.remove(0) & 0xffffffff; // maybe 32bit need to use long instead int
+				//System.out.printf("offset2 = %x\n", offset2);
+				offset2 *= BlockDevice.BLOCK_SIZE;
+				if (remainsize < BlockDevice.BLOCK_SIZE) {
+					byte[] tmp = bd.getBytes(offset2,  offset2+remainsize);
+					System.arraycopy(tmp, 0, buf, p, tmp.length);
+					p += tmp.length;
+					remainsize = 0;
+					break;
+				} else {
+					byte[] tmp = bd.getBytes(offset2, offset2+BlockDevice.BLOCK_SIZE);
+					System.arraycopy(tmp, 0, buf, p, tmp.length);
+					p += tmp.length;
+					remainsize -= BlockDevice.BLOCK_SIZE;
+				}
+			}
+			if (remainsize == 0) break;			
+		}
+		return buf;
+		//return extractDirect(bd);
 	}
 	
 	private byte[] extractDirect(BlockDevice bd) {
 		byte[] buf = new byte[di_size];
 		int p = 0;
 		int remainsize = di_size;
-		for (int i = 0; i < (di_addr.length / 3); i += 3) {
+		for (int i = 0; i < di_addr.length; i += 3) {
 			int offset = (di_addr[i] & 0xff | (di_addr[i+1] & 0xff) << 8 | (di_addr[i+2] & 0xff) << 16) * BlockDevice.BLOCK_SIZE;
 			if (remainsize < BlockDevice.BLOCK_SIZE) {
 				byte[] tmp = bd.getBytes(offset, offset+remainsize);
