@@ -22,6 +22,7 @@ public class Inode {
 	public int di_ctime;
 	
 	public boolean isDirectory;
+	public boolean isRegular;
 	
 	private Map<String, Integer> f_table;
 	
@@ -44,7 +45,9 @@ public class Inode {
 			inode.di_atime = bd.readInt();
 			inode.di_mtime = bd.readInt();
 			inode.di_ctime = bd.readInt();			
-			inode.isDirectory = ((inode.di_mode >> 12) & 7) == 4;
+			//inode.isDirectory = ((inode.di_mode >> 12) & 7) == 4;
+			inode.isDirectory = ((inode.di_mode >> 12) & 0xf) == 4;
+			inode.isRegular = ((inode.di_mode >> 12) & 0xf) == 8;
 			inodes.add(inode);
 		}		
 		return inodes;
@@ -86,6 +89,10 @@ public class Inode {
 		for (Map.Entry<String, Integer> entry : f_table.entrySet()) {
 			System.out.printf("%s : %d\n", entry.getKey(), entry.getValue());
 		}
+	}
+	
+	public Map<String, Integer> getTable() {
+		return f_table;
 	}
 	
 	public int getTargetInode(String path) {

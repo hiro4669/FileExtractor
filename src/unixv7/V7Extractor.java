@@ -1,12 +1,16 @@
 package unixv7;
 
+import java.io.File;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class V7Extractor {
 	
 	private BlockDevice bd;
 	private List<Inode> inodes;
+	private List<String> allFiles;
 	
 	public static void main(String[] args) {
 		String targetName = "";
@@ -15,7 +19,8 @@ public class V7Extractor {
 		case 0: {
 			//targetName = "/test/a.out";
 			//targetName = "/test/result"; // blow 5012 byte
-			targetName = "/test/result2";  
+			//targetName = "/test/result2";  
+			targetName = "/fboot";  
 			disk = "rp06.disk";
 			break;
 		}
@@ -40,6 +45,8 @@ public class V7Extractor {
 		//v7e.extract("/test/hoge.txt");
 		//v7e.extract("/test/hello.s");
 		v7e.extract(targetName);
+		
+		//v7e.extractAll();
 		
 	}
 	
@@ -66,6 +73,38 @@ public class V7Extractor {
 				//}
 			}
 		}		
+	}
+	
+	//private void extract(Inode node, String name, String parent) {
+	private void extract(Inode node, String pname) {		
+		if (node.isDirectory) {
+			Map<String, Integer> f_table = node.getTable();
+			for (Map.Entry<String, Integer> entry : f_table.entrySet()) {
+				//System.out.printf("%s : %d\n", entry.getKey(), entry.getValue());
+				String name = entry.getKey();
+				int num = entry.getValue();
+				if (num > 2 && !name.equals(".") && !name.equals("..")) {
+				//	System.out.printf("%s : %d\n", entry.getKey(), entry.getValue());
+					//extract(inodes.get(num), key, parent + "/" + key);										
+					extract(inodes.get(num), pname + "/" + name);										
+				}				
+			}
+		} else {
+			if (node.isRegular) {
+				allFiles.add(pname);
+				//System.out.printf("mode = %x , %s\n", node.di_mode, pname);
+			}
+		}
+	}
+	
+	public void extractAll() {
+		allFiles = new ArrayList<String>();
+		Inode root = inodes.get(2);
+		extract(root, "");
+		for (String s : allFiles) {
+			System.out.println(s);
+		}
+		
 	}
 	
 	public void extract(String path) {
@@ -98,13 +137,24 @@ public class V7Extractor {
 		//To extract
 		byte[] data = target.extract(bd);
 		System.out.println("data length = " + data.length);
+		String distDir = "output";
+		int pos = path.substring(1,  path.length()).lastIndexOf("/");
+		if (pos != -1) {
+			String dirName = distDir + path.substring(0, pos+1);
+			System.out.println("dir = " + dirName);
+			File dir = new File(dirName);
+			dir.mkdirs();
+		}
+		
 		
 		try {
-			FileOutputStream fout = new FileOutputStream(paths[paths.length-1]);
+			//FileOutputStream fout = new FileOutputStream(paths[paths.length-1]);
+			FileOutputStream fout = new FileOutputStream(distDir + path);
 			fout.write(data, 0, data.length);
 			fout.flush();
 			fout.close();
-			System.out.println("Write data to > " + paths[paths.length-1]);
+			//System.out.println("Write data to > " + paths[paths.length-1]);
+			System.out.println("Write data to > " + distDir + path);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
