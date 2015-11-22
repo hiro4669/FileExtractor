@@ -15,17 +15,21 @@ public class V7Extractor {
 	public static void main(String[] args) {
 		String targetName = "";
 		String disk = "";
+		boolean all = false;
 		switch(args.length) {
 		case 0: {
 			//targetName = "/test/a.out";
 			//targetName = "/test/result"; // blow 5012 byte
 			//targetName = "/test/result2";  
-			targetName = "/fboot";  
+			//targetName = "/fboot";  
+			//targetName = "/unix";
+			all = true;
 			disk = "rp06.disk";
 			break;
 		}
 		case 1: {
 			disk = "rp06.disk";
+			all = true;
 			targetName = args[0];
 			break;
 		}
@@ -41,13 +45,12 @@ public class V7Extractor {
 		
 		V7Extractor v7e = new V7Extractor();
 		v7e.process(disk);
-		//v7e.extract("/hoge.txt");
-		//v7e.extract("/test/hoge.txt");
-		//v7e.extract("/test/hello.s");
-		v7e.extract(targetName);
-		
-		//v7e.extractAll();
-		
+		if (all) {
+			v7e.extractAll();
+		} else {
+			v7e.extract(targetName);
+		}
+				
 	}
 	
 	public void process(String disk) {
@@ -75,24 +78,19 @@ public class V7Extractor {
 		}		
 	}
 	
-	//private void extract(Inode node, String name, String parent) {
 	private void extract(Inode node, String pname) {		
 		if (node.isDirectory) {
 			Map<String, Integer> f_table = node.getTable();
 			for (Map.Entry<String, Integer> entry : f_table.entrySet()) {
-				//System.out.printf("%s : %d\n", entry.getKey(), entry.getValue());
 				String name = entry.getKey();
 				int num = entry.getValue();
 				if (num > 2 && !name.equals(".") && !name.equals("..")) {
-				//	System.out.printf("%s : %d\n", entry.getKey(), entry.getValue());
-					//extract(inodes.get(num), key, parent + "/" + key);										
 					extract(inodes.get(num), pname + "/" + name);										
 				}				
 			}
 		} else {
 			if (node.isRegular) {
 				allFiles.add(pname);
-				//System.out.printf("mode = %x , %s\n", node.di_mode, pname);
 			}
 		}
 	}
@@ -102,7 +100,7 @@ public class V7Extractor {
 		Inode root = inodes.get(2);
 		extract(root, "");
 		for (String s : allFiles) {
-			System.out.println(s);
+			extract(s);
 		}
 		
 	}
@@ -141,19 +139,19 @@ public class V7Extractor {
 		int pos = path.substring(1,  path.length()).lastIndexOf("/");
 		if (pos != -1) {
 			String dirName = distDir + path.substring(0, pos+1);
-			System.out.println("dir = " + dirName);
 			File dir = new File(dirName);
-			dir.mkdirs();
+			if (!dir.exists()) {
+				System.out.println("mkdir.. " + dirName);
+				dir.mkdirs();
+			}
 		}
 		
 		
 		try {
-			//FileOutputStream fout = new FileOutputStream(paths[paths.length-1]);
 			FileOutputStream fout = new FileOutputStream(distDir + path);
 			fout.write(data, 0, data.length);
 			fout.flush();
 			fout.close();
-			//System.out.println("Write data to > " + paths[paths.length-1]);
 			System.out.println("Write data to > " + distDir + path);
 		} catch (Exception e) {
 			e.printStackTrace();

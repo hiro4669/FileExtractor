@@ -45,7 +45,6 @@ public class Inode {
 			inode.di_atime = bd.readInt();
 			inode.di_mtime = bd.readInt();
 			inode.di_ctime = bd.readInt();			
-			//inode.isDirectory = ((inode.di_mode >> 12) & 7) == 4;
 			inode.isDirectory = ((inode.di_mode >> 12) & 0xf) == 4;
 			inode.isRegular = ((inode.di_mode >> 12) & 0xf) == 8;
 			inodes.add(inode);
@@ -171,9 +170,9 @@ public class Inode {
 			if (remainsize == 0) break;			
 		}
 		return buf;
-		//return extractDirect(bd);
 	}
 	
+	@Deprecated
 	private byte[] extractDirect(BlockDevice bd) {
 		byte[] buf = new byte[di_size];
 		int p = 0;
