@@ -2,6 +2,7 @@ package unixv7;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -81,12 +82,18 @@ public class V7Extractor {
 	private void extract(Inode node, String pname) {		
 		if (node.isDirectory) {
 			Map<String, Integer> f_table = node.getTable();
+			//System.out.printf("%s : %d\n", pname, f_table.size());
+			int validCount = 0;
 			for (Map.Entry<String, Integer> entry : f_table.entrySet()) {
 				String name = entry.getKey();
 				int num = entry.getValue();
 				if (num > 2 && !name.equals(".") && !name.equals("..")) {
+					validCount++;
 					extract(inodes.get(num), pname + "/" + name);										
 				}				
+			}
+			if (validCount == 0) {
+				allFiles.add(pname + "/");
 			}
 		} else {
 			if (node.isRegular) {
@@ -98,15 +105,69 @@ public class V7Extractor {
 	public void extractAll() {
 		allFiles = new ArrayList<String>();
 		Inode root = inodes.get(2);
-		extract(root, "");
+		/*
+		Map<String, Integer> f_table = root.getTable();
+		for (Map.Entry<String, Integer> entry : f_table.entrySet()) {
+			String name = entry.getKey();
+			int num = entry.getValue();
+			if (num > 2 && !name.equals(".") && !name.equals("..")) {
+				System.out.printf("%s, %d\n", name, num);
+			}
+		}		
+		System.out.println("-----------");		
+		*/
+
+		extract(root, "");		
 		for (String s : allFiles) {
 			extract(s);
-		}
-		
+		}		
 	}
 	
-	public void extract(String path) {
+	public String getValidFiles() {
+		allFiles = new ArrayList<String>();
+		Inode root = inodes.get(2);
+		extract(root, "");
+		StringWriter writer = new StringWriter();
+		for (String s : allFiles) {
+			writer.write(s);
+			writer.write("\n");;
+		}
+		return writer.toString();
+	}
+	
+	public String getInodeInfo(String path) {
 		System.out.println("try to find " + path);
+		Inode parent = inodes.get(2); // root
+		Inode target = null;
+		String[] paths = path.substring(1, path.length()).split("/");
+		int inode_num = 0;
+		for (String str : paths) {
+			int num = parent.getTargetInode(str);
+			if (num == -1) {
+				System.out.println("cannot find inode for " + str);
+				System.exit(1);
+			}
+			target = inodes.get(num);
+			inode_num = num;
+			if (target.isDirectory) {
+				parent = target;
+			} 
+		}			
+		
+		System.out.println("inode_num = " + inode_num);
+		System.out.printf("inode offset = 0x%x\n", (inode_num - 1) * 0x40 + 0x400);
+		target.show();
+		//System.out.println(target.createInfo(inode_num));
+		
+		
+		return target.createInfo(inode_num);
+	}
+	
+	public byte[] extract(String path) {
+		System.out.println("try to find " + path);
+		if (path.endsWith("/")) return null;
+		
+		
 		Inode parent = inodes.get(2); // root node
 		Inode target = null;
 		int inode_num = 0;
@@ -156,6 +217,8 @@ public class V7Extractor {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		
+		return data;
 		
 	}
 }

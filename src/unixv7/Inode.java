@@ -1,6 +1,8 @@
 package unixv7;
 
+import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +57,7 @@ public class Inode {
 	public void createIndex(BlockDevice bd) {
 		f_table = new HashMap<String, Integer>();
 		boolean remaining = true;
-		for (int i = 0; i < (di_addr.length / 3); i += 3) {
+		for (int i = 0; i < di_addr.length-1; i += 3) {
 			int offset = (di_addr[i] & 0xff | (di_addr[i+1] & 0xff) << 8 | (di_addr[i+2] & 0xff) << 16) * BlockDevice.BLOCK_SIZE;
 			//System.out.printf("offset = 0x%x\n", offset);
 			
@@ -77,9 +79,46 @@ public class Inode {
 		}
 	}
 	
+	public String createInfo(int num) {
+		StringWriter writer = new StringWriter();
+		writer.write("inode  : "+ num);
+		writer.write("\n");
+		writer.write("mode   : ");
+		for (int i = 2; i >= 0; --i) {
+			writer.write(Integer.toString((di_mode >> (i*3)) & 7));
+		}
+		if (isDirectory) writer.write(", IDIR");
+		if (isRegular) writer.write(", Regular");
+		writer.write("\n");
+		writer.write("offset : 0x" + Integer.toHexString((num - 1) * 0x40 + 0x400));
+		writer.write("\n");
+		writer.write("nlink  : " + di_nlink);
+		writer.write("\n");
+		writer.write("uid    : " + di_uid);
+		writer.write("\n");
+		writer.write("gid    : " + di_gid);
+		writer.write("\n");
+		writer.write("size   : " + di_size);
+		writer.write("\n");
+		writer.write("addr   : ");		
+		for (int i = 0; i < di_addr.length-1; i += 3) {
+			int offset = (di_addr[i] & 0xff | (di_addr[i+1] & 0xff) << 8 | (di_addr[i+2] & 0xff) << 16);			
+			if (i != 0) writer.write(",");
+			writer.write(Integer.toString(offset));
+		}
+		writer.write("\n");
+		writer.write("atime  : " + new Date(di_atime)); // I don't know it is correct or not
+		writer.write("\n");
+		writer.write("mtime  : " + new Date(di_mtime));
+		writer.write("\n");
+		writer.write("ctime  : " + new Date(di_ctime));
+		
+		return writer.toString();
+	}
+	
 	public void showTable() {
 		System.out.print("\nBlocks: ");
-		for (int i = 0; i < (di_addr.length / 3); i += 3) {
+		for (int i = 0; i < di_addr.length-1; i += 3) {
 			int offset = (di_addr[i] & 0xff | (di_addr[i+1] & 0xff) << 8 | (di_addr[i+2] & 0xff) << 16) * BlockDevice.BLOCK_SIZE;
 			if (i * BlockDevice.BLOCK_SIZE > di_size) break;
 			System.out.printf("0x%x ", offset);
