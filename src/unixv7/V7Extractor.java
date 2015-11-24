@@ -135,6 +135,38 @@ public class V7Extractor {
 		return writer.toString();
 	}
 	
+	private int getTargetInode(String path) {
+		System.out.println("try to find " + path);
+		Inode parent = inodes.get(2); // root
+		Inode target = null;
+		String[] paths = path.substring(1, path.length()).split("/");
+		int inode_num = 0;
+		for (String str : paths) {
+			int num = parent.getTargetInode(str);
+			if (num == -1) {
+				System.out.println("cannot find inode for " + str);
+				System.exit(1);
+			}
+			target = inodes.get(num);
+			inode_num = num;
+			if (target.isDirectory) {
+				parent = target;
+			} 
+		}
+		
+		return inode_num;
+	}
+	
+	public int getSize(String path) {
+		Inode targetNode = inodes.get(getTargetInode(path));		
+		return targetNode.di_size;
+	}
+	public String getInodeInfo(String path) {		
+		int inode_num = getTargetInode(path);
+		return inodes.get(inode_num).createInfo(inode_num);		
+	}
+	
+	/*
 	public String getInodeInfo(String path) {
 		System.out.println("try to find " + path);
 		Inode parent = inodes.get(2); // root
@@ -162,6 +194,7 @@ public class V7Extractor {
 		
 		return target.createInfo(inode_num);
 	}
+	*/
 	
 	public byte[] extract(String path) {
 		System.out.println("try to find " + path);

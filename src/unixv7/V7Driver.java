@@ -21,7 +21,9 @@ public class V7Driver {
 		String info = driver.getInodeInfo("/test/result2");
 		System.out.println(info);		
 		byte[] data = driver.getData("/test/result");
-		System.out.println(new String(data));		
+		System.out.println(new String(data));
+		
+		System.out.println(driver.getSize("/test/result"));
 	}
 	
 	public String getInodeInfo(String path) {
@@ -30,6 +32,10 @@ public class V7Driver {
 	
 	public byte[] getData(String path) {
 		return extractor.extract(path);
+	}
+	
+	public int getSize(String path) {
+		return extractor.getSize(path);
 	}
 	
 	public String getAllFiles() {
