@@ -49,7 +49,7 @@ public class V7Extractor {
 		if (all) {
 			v7e.extractAll();
 		} else {
-			v7e.extract(targetName);
+			v7e.extract(targetName, true);
 		}
 				
 	}
@@ -119,7 +119,7 @@ public class V7Extractor {
 
 		extract(root, "");		
 		for (String s : allFiles) {
-			extract(s);
+			extract(s, true);
 		}		
 	}
 	
@@ -196,7 +196,7 @@ public class V7Extractor {
 	}
 	*/
 	
-	public byte[] extract(String path) {
+	public byte[] extract(String path, boolean outflg) {
 		System.out.println("try to find " + path);
 		if (path.endsWith("/")) return null;
 		
@@ -228,6 +228,10 @@ public class V7Extractor {
 		
 		//To extract
 		byte[] data = target.extract(bd);
+		if (!outflg) {
+			return data;
+		}
+		
 		System.out.println("data length = " + data.length);
 		String distDir = "output";
 		int pos = path.substring(1,  path.length()).lastIndexOf("/");
@@ -239,8 +243,7 @@ public class V7Extractor {
 				dir.mkdirs();
 			}
 		}
-		
-		
+				
 		try {
 			FileOutputStream fout = new FileOutputStream(distDir + path);
 			fout.write(data, 0, data.length);

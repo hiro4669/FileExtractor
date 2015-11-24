@@ -31,7 +31,7 @@ public class V7Driver {
 	}
 	
 	public byte[] getData(String path) {
-		return extractor.extract(path);
+		return extractor.extract(path, false);
 	}
 	
 	public int getSize(String path) {
