@@ -56,7 +56,8 @@ public class V7Extractor {
 	
 	public void process(String disk) {
 		try {
-			bd = new BlockDevice(disk);
+			//bd = new BlockDevice(disk); // read all data on memory
+			bd = new RandomBlockDevice(disk); // use random access file 
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(1);

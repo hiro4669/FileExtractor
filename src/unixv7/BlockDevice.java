@@ -12,6 +12,9 @@ public static final int BLOCK_SIZE = 512;
 	
 	private byte[] dummy = {(byte)0xff, (byte)0xff};
 	
+	public BlockDevice() {		
+	}
+	
 	public BlockDevice(String path) throws Exception {
 		ByteArrayOutputStream bout = new ByteArrayOutputStream();
 		BufferedInputStream bin = new BufferedInputStream(new FileInputStream(path));
